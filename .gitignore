@@ -134,3 +134,4 @@ dmypy.json
 # Project files should stay locally only
 .envs/.prod*
 api_recommendations/staticfiles/backups/*
+etl/state
