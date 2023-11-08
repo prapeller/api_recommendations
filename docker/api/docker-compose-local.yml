@@ -62,11 +62,6 @@ services:
       - media_files_recommendations_volume:/app/api_recommendations/mediafiles
     depends_on:
       - api_recommendations
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "nginx_recommendations", "85" ]
-      interval: 3s
-      timeout: 10s
-      retries: 3
     network_mode: host
 
 
