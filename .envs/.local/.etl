@@ -1,0 +1,4 @@
+DEBUG=True
+DOCKER=False
+
+GENSIM_DATA_DIR=/root/gensim-data

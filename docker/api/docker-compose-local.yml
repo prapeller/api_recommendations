@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+
+  redis_recommendations:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/redis/Dockerfile
+    container_name: redis_recommendations
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping", "|", "grep", "PONG" ]
+      interval: 3s
+      retries: 3
+    networks:
+      - local_network_api_recommendations
+    env_file:
+      - ../../.envs/.docker-compose-local/.redis
+    ports:
+      - "6385:6379"
+
+  api_recommendations:
+    build:
+      context: ../..
+      dockerfile: ./docker/api/Dockerfile
+      args:
+        - BUILD_ENV=local
+    container_name: api_recommendations
+    command: /start_local
+    volumes:
+      - static_files_recommendations_volume:/app/api_recommendations/staticfiles
+      - media_files_recommendations_volume:/app/api_recommendations/mediafiles
+      - ../../api_recommendations:/app/api_recommendations
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -H 'X-Request-Id: healthcheck' --fail -f http://$$API_RECOMMENDATIONS_HOST:$$API_RECOMMENDATIONS_PORT/$$DOCS_URL" ]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ../../.envs/.docker-compose-local/.api
+      - ../../.envs/.docker-compose-local/.vector
+      - ../../.envs/.docker-compose-local/.postgres
+      - ../../.envs/.docker-compose-local/.redis
+    networks:
+      - local_network_api_recommendations
+      - shared_network
+    expose:
+      - "8085"
+    ports:
+      - "8085:8085"
+
+
+  nginx_recommendations:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: ./docker/api/nginx/Dockerfile
+    container_name: nginx_recommendations
+    env_file:
+      - ../../.envs/.docker-compose-local/.api
+    volumes:
+      - static_files_recommendations_volume:/app/api_recommendations/staticfiles
+      - media_files_recommendations_volume:/app/api_recommendations/mediafiles
+    depends_on:
+      - api_recommendations
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "nginx_recommendations", "85" ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    network_mode: host
+
+
+networks:
+  local_network_api_recommendations:
+    driver: bridge
+  shared_network:
+    external: true
+
+volumes:
+  static_files_recommendations_volume:
+  media_files_recommendations_volume:

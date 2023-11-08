@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -o errexit # if any command fails any reason, script fails
+set -o pipefail # if none of of you pipecommand fails, exit fails
+set -o nounset # if none of variables set, exit
+
+
+redis_ready(){
+   nc -z ${REDIS_HOST} ${REDIS_PORT}
+}
+
+until redis_ready; do
+   >&2 echo "Waiting for Redis to become available... 8-(("
+   sleep 1
+done
+>&2 echo "Redis is ready!!! 8-))"
+
+exec "$@"

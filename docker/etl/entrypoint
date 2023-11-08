@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -o errexit # if any command fails any reason, script fails
+set -o pipefail # if none of of you pipecommand fails, exit fails
+set -o nounset # if none of variables set, exit
+
+
+postgres_ready() {
+python << END
+import sys
+import psycopg2
+try:
+    psycopg2.connect(
+        dbname="${SEARCH_POSTGRES_DB}",
+        user="${SEARCH_POSTGRES_USER}",
+        password="${SEARCH_POSTGRES_PASSWORD}",
+        host="${SEARCH_POSTGRES_HOST}",
+        port="${SEARCH_POSTGRES_PORT}",
+    )
+except psycopg2.OperationalError:
+    sys.exit(-1)
+sys.exit(0)
+END
+}
+
+until postgres_ready; do
+>&2 echo "Waiting for PostgreSQL at '${SEARCH_POSTGRES_HOST}:${SEARCH_POSTGRES_PORT}' to become available... 8-(("
+sleep 1
+done
+>&2 echo "PostgreSQL at '${SEARCH_POSTGRES_HOST}:${SEARCH_POSTGRES_PORT}' is ready!!! 8-))"
+
+
+exec "$@"

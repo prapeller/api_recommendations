@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm /app/etl/state
+python3 etl.py

@@ -1,0 +1,9 @@
+DEBUG=True
+DOCKER=True
+
+API_RECOMMENDATIONS_HOST=192.168.0.12
+API_RECOMMENDATIONS_PORT=85
+
+GENSIM_DATA_DIR=/root/gensim-data
+
+SERVICE_TO_SERVICE_SECRET=topsupersecretservicetoservicesecret

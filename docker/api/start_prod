@@ -1,0 +1,3 @@
+#!/bin/bash
+
+gunicorn main:app --bind "${API_RECOMMENDATIONS_HOST}:${API_RECOMMENDATIONS_PORT}" --reload --workers=2 --timeout=300 --worker-class uvicorn.workers.UvicornWorker

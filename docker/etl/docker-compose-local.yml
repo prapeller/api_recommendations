@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+
+  etl_postgres_to_vector_recommendations:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: ./docker/etl/Dockerfile
+      args:
+        - BUILD_ENV=local
+    container_name: etl_postgres_to_vector_recommendations
+    command: /start_local
+    volumes:
+      - ../../etl:/app/etl
+      - gensim-data-volume:/root/gensim-data
+    networks:
+      - local_network_vector
+      - shared_network
+    env_file:
+      - ../../.envs/.docker-compose-local/.vector
+      - ../../.envs/.docker-compose-local/.etl
+      - ../../.envs/.docker-compose-local/.postgres
+
+networks:
+  shared_network:
+    external: true
+  local_network_vector:
+    driver: bridge
+
+volumes:
+  gensim-data-volume:
