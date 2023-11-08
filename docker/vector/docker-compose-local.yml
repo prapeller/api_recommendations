@@ -25,8 +25,8 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     command: server /data
-    ports:
-      - "9000:9000"
+#    ports:
+#      - "9000:9000"
     expose:
       - "9000"
     networks:
