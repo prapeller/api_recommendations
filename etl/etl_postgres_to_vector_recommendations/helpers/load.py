@@ -24,7 +24,7 @@ VECTORS_CHUNK_SIZE = 100
 
 def load_exception_handler(details):
     e = details['exception']
-    message = f"can't load vectors:: {e.error}, {e.info}".replace('\n', ' ')
+    message = f"can't load vectors: {e}".replace('\n', ' ')
     tries = details['tries']
     wait = details['wait']
     logger.error(f'{tries=:}, wait:{wait:0.1f}, {message=:}')
