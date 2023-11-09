@@ -9,9 +9,14 @@ from core.config import settings
 def dict_chunks_generator(dictionary, chunk_size):
     """Yield chunk_size elements chunks from dictionary."""
     it = iter(dictionary.items())
-    for first in it:
-        chunk = dict([first] + [next(it, (None, None)) for _ in range(chunk_size - 1)])
-        yield {k: v for k, v in chunk if k is not None}
+    while True:
+        # Extract the next chunk of keys
+        chunk_keys = [next(it, None) for _ in range(chunk_size)]
+        # Remove any `None` keys that signify the end of the iterator
+        chunk_keys = [key for key in chunk_keys if key is not None]
+        if not chunk_keys:
+            break
+        yield {key: dictionary[key] for key in chunk_keys}
 
 
 VECTORS_CHUNK_SIZE = 100
@@ -19,7 +24,7 @@ VECTORS_CHUNK_SIZE = 100
 
 def load_exception_handler(details):
     e = details['exception']
-    message = f'Failed to load vectors to the Vector service. {e.error} {e.info}'.replace('\n', ' ')
+    message = f"can't load vectors:: {e.error}, {e.info}".replace('\n', ' ')
     tries = details['tries']
     wait = details['wait']
     logger.error(f'{tries=:}, wait:{wait:0.1f}, {message=:}')
@@ -39,4 +44,4 @@ class VectorLoader:
             logger.debug(f'loading vectors_chunk: {len(vectors_chunk)} of {len(vectors)}')
             response = requests.post(self.load_url, json=vectors_chunk, headers=headers)
             response.raise_for_status()
-            logger.debug("Vectors successfully sent to the Vector service.")
+        logger.debug(f"success: loaded vectors {len(vectors)}")
