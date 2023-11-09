@@ -8,10 +8,10 @@ from core.config import settings
 
 def dict_chunks_generator(dictionary, chunk_size):
     """Yield chunk_size elements chunks from dictionary."""
-    it = iter(dictionary.items())
+    dict_keys = iter(dictionary.keys())
     while True:
         # Extract the next chunk of keys
-        chunk_keys = [next(it, None) for _ in range(chunk_size)]
+        chunk_keys = [next(dict_keys, None) for _ in range(chunk_size)]
         # Remove any `None` keys that signify the end of the iterator
         chunk_keys = [key for key in chunk_keys if key is not None]
         if not chunk_keys:
