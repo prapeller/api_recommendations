@@ -19,7 +19,7 @@ VECTORS_CHUNK_SIZE = 100
 
 def load_exception_handler(details):
     e = details['exception']
-    message = f'{e.error} {e.info}'.replace('\n', ' ')
+    message = f'Failed to load vectors to the Vector service. {e.error} {e.info}'.replace('\n', ' ')
     tries = details['tries']
     wait = details['wait']
     logger.error(f'{tries=:}, wait:{wait:0.1f}, {message=:}')
@@ -36,11 +36,7 @@ class VectorLoader:
         headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET,
                    'Service-Name': 'etl_from_postgres_to_vector'}
         for vectors_chunk in dict_chunks_generator(vectors, VECTORS_CHUNK_SIZE):
-            try:
-                logger.debug(f'loading vectors_chunk: {len(vectors_chunk)} of {len(vectors)}')
-                response = requests.post(self.load_url, json=vectors_chunk, headers=headers)
-                response.raise_for_status()
-                logger.debug("Vectors successfully sent to the Vector service.")
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to send vectors to the Vector service. Error: {str(e)}")
-                raise
+            logger.debug(f'loading vectors_chunk: {len(vectors_chunk)} of {len(vectors)}')
+            response = requests.post(self.load_url, json=vectors_chunk, headers=headers)
+            response.raise_for_status()
+            logger.debug("Vectors successfully sent to the Vector service.")
