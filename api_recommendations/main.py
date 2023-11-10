@@ -9,7 +9,7 @@ from api.v1.auth import recommendations as v1_recommendations_auth
 from api.v1.services import vectors as v1_vectors_services
 from core import dependencies
 from core.config import settings
-from core.dependencies import verified_access_token_dependency, verified_service_dependency
+from core.dependencies import verified_access_token_dependency, verify_service_dependency
 
 
 @asynccontextmanager
@@ -33,7 +33,7 @@ v1_router_auth = fa.APIRouter(
 )
 v1_router_auth.include_router(v1_recommendations_auth.router, prefix='/recommendations', tags=['recommendations'])
 
-v1_router_services = fa.APIRouter(dependencies=[fa.Depends(verified_service_dependency)])
+v1_router_services = fa.APIRouter(dependencies=[fa.Depends(verify_service_dependency)])
 v1_router_services.include_router(v1_vectors_services.router, prefix='/services-vectors',
                                   tags=['services-vectors'])
 

@@ -11,7 +11,7 @@ from services.cache.cache import RedisCache
 from services.vector.logger_config import logger
 
 
-class AbstractRepository(ABC):
+class AbstractVectorRepository(ABC):
 
     @abstractmethod
     def set(self, *args, **kwargs):
@@ -22,7 +22,7 @@ class AbstractRepository(ABC):
         pass
 
 
-class VectorMilvusRepository(AbstractRepository):
+class VectorMilvusRepository(AbstractVectorRepository):
     def __init__(self, cache: RedisCache, dimension=300, collection_name='film_vectors_varchar'):
         self.dimension = dimension
         self.collection_name = collection_name
@@ -73,10 +73,10 @@ class VectorMilvusRepository(AbstractRepository):
             vector = results[0]["vector"] if results[0]["vector"] else None
         return vector
 
-    async def search_nearest(self, liked_film_uuids: list[str], k=10):
-        nearest_uuids = await self.cache.get(str(liked_film_uuids))
+    async def search_nearest(self, film_uuids: list[str], k=10) -> list:
+        nearest_uuids = await self.cache.get(str(film_uuids))
         if nearest_uuids is None:
-            vectors = [await self.get(film_uuid) for film_uuid in liked_film_uuids]
+            vectors = [await self.get(film_uuid) for film_uuid in film_uuids]
             average_vector = np.mean(vectors, axis=0)
             search_params = {
                 "data": [average_vector],
@@ -84,22 +84,22 @@ class VectorMilvusRepository(AbstractRepository):
                 "param": {"metric_type": "L2", "params": {"nprobe": 10}},
                 "limit": k,
             }
-            logger.debug(f'searching by {search_params}')
             nearest_uuids = []
             results = self.collection.search(**search_params)
             if results:
                 nearest_uuids = [str(result.entity.id) for result in results[0]]
-                await self.cache.set(str(liked_film_uuids), nearest_uuids)
+                await self.cache.set(str(film_uuids), nearest_uuids)
         return nearest_uuids
 
-    async def search_nearest_for_user(self, user_uuid):
+    async def search_nearest_film_uuids_for_user(self, user_uuid: str) -> list[str]:
+        logger.debug(f'search_nearest_for_user: {user_uuid=:}')
         user_bookmarks_url = f'http://{settings.API_UGC_HOST}:{settings.API_UGC_PORT}/api/v1/film-bookmarks/{user_uuid}'
         nearest_film_uuids = []
         async with httpx.AsyncClient() as client:
             resp = await client.get(url=user_bookmarks_url)
         if resp.status_code == fa.status.HTTP_200_OK:
-            resp_dict = json.loads(resp.text)
-            film_uuids = [film_bookmark.get('film_uuid') for film_bookmark in resp_dict.get('film_bookmarks', [])]
+            nearest_films_uuids_dict = json.loads(resp.text)
+            film_uuids = [fb.get('film_uuid') for fb in nearest_films_uuids_dict.get('film_bookmarks', [])]
             if film_uuids:
                 nearest_film_uuids = await self.search_nearest([str(film_uuid) for film_uuid in film_uuids])
         return nearest_film_uuids

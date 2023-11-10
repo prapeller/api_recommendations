@@ -50,11 +50,11 @@ class RedisCache(Cache):
         except (TypeError, RedisError) as e:
             logger.error("can't set by {}, {}".format(cache_key, e))
 
-    async def get(self, cache_key: str) -> dict | None:
+    async def get(self, cache_key: str) -> dict | list | None:
         try:
             data: bytes = await self.redis.get(cache_key)
             if data is not None:
-                data: dict = orjson.loads(data)
+                data: dict | list = orjson.loads(data)
                 logger.debug('get by {}, {} '.format(cache_key, str(data)[:10]))
             return data
         except RedisError as e:
