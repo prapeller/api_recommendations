@@ -4,13 +4,15 @@ import uuid
 import fastapi as fa
 import httpx
 import pydantic as pd
+from fastapi.security import OAuth2PasswordBearer
+from redis.asyncio import Redis
+
 from core.config import settings
 from core.enums import ServicesNamesEnum
 from core.exceptions import UnauthorizedException
 from core.logger_config import logger
-from fastapi.security import OAuth2PasswordBearer
-from redis.asyncio import Redis
 from services.cache.cache import RedisCache
+from services.recommendations.recommendations import RecommendationsService
 from services.vector.repo import VectorMilvusRepository
 
 redis: Redis | None = None
@@ -20,11 +22,15 @@ async def redis_dependency() -> Redis:
     return redis
 
 
-async def redis_cache_dependency(redis=fa.Depends(redis_dependency)):
+async def redis_cache_dependency(
+        redis=fa.Depends(redis_dependency),
+) -> RedisCache:
     return RedisCache(redis)
 
 
-async def vector_repo_dependency(redis_cache=fa.Depends(redis_cache_dependency)):
+async def vector_repo_dependency(
+        redis_cache=fa.Depends(redis_cache_dependency),
+) -> VectorMilvusRepository:
     return VectorMilvusRepository(cache=redis_cache)
 
 
@@ -54,11 +60,12 @@ async def verified_access_token_dependency(
 
 
 async def current_user_uuid_dependency(
-        verified_token: dict = fa.Depends(verified_access_token_dependency)) -> uuid.UUID:
+        verified_token: dict = fa.Depends(verified_access_token_dependency),
+) -> uuid.UUID:
     return uuid.UUID(verified_token.get('sub'))
 
 
-async def verified_service_dependency(
+async def verify_service_dependency(
         request: fa.Request,
 ) -> None:
     auth_header = request.headers.get('Authorization')
@@ -69,3 +76,10 @@ async def verified_service_dependency(
         detail = f"can't verify service request: {auth_header=:} {service_name=:}"
         logger.error(detail)
         raise UnauthorizedException(detail)
+
+
+async def recommendations_service_dependency(
+        current_user_uuid: pd.UUID4 = fa.Depends(current_user_uuid_dependency),
+        vector_repo: VectorMilvusRepository = fa.Depends(vector_repo_dependency),
+) -> RecommendationsService:
+    return RecommendationsService(vector_repo, str(current_user_uuid))

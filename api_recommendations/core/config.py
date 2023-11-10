@@ -20,6 +20,9 @@ class Settings(ps.BaseSettings):
     API_UGC_HOST: str
     API_UGC_PORT: int
 
+    API_SEARCH_HOST: str
+    API_SEARCH_PORT: int
+
     REDIS_HOST: str
     REDIS_PORT: int
 
