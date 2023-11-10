@@ -8,15 +8,15 @@ router = fa.APIRouter()
 
 
 @router.get("/{film_uuid}", response_model=list[float])
-async def recommendations_read_vector(
+async def vectors_read(
         film_uuid: pd.UUID4,
         vector_repo: VectorMilvusRepository = fa.Depends(vector_repo_dependency),
 ):
     return await vector_repo.get(str(film_uuid))
 
 
-@router.post("/set")
-async def recommendations_create_vector(
+@router.post("/")
+async def vectors_create(
         film_vectors_data: dict[str, list[float]] = fa.Body(...),
         vector_repo: VectorMilvusRepository = fa.Depends(vector_repo_dependency),
 ):
