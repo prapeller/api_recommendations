@@ -17,7 +17,7 @@ def load_exception_handler(details):
 class VectorLoader:
 
     def __init__(self, host: str, port: int):
-        self.load_url = f'http://{host}:{port}/api/v1/services-recommendations/set'
+        self.load_url = f'http://{host}:{port}/api/v1/services-vectors/'
 
     @on_exception(constant, Exception, max_tries=500, on_backoff=load_exception_handler)
     def load(self, vectors: dict[str, np.ndarray]):
