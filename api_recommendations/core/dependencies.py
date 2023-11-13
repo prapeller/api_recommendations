@@ -16,6 +16,7 @@ from services.recommendations.recommendations import RecommendationsService
 from services.vector.repo import VectorMilvusRepository
 
 redis: Redis | None = None
+vector_repo: VectorMilvusRepository | None = None
 
 
 async def redis_dependency() -> Redis:
@@ -28,10 +29,8 @@ async def redis_cache_dependency(
     return RedisCache(redis)
 
 
-async def vector_repo_dependency(
-        redis_cache=fa.Depends(redis_cache_dependency),
-) -> VectorMilvusRepository:
-    return VectorMilvusRepository(cache=redis_cache)
+async def vector_repo_dependency() -> VectorMilvusRepository:
+    return vector_repo
 
 
 oauth2_scheme_local = OAuth2PasswordBearer(
