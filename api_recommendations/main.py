@@ -10,12 +10,17 @@ from api.v1.services import vectors as v1_vectors_services
 from core import dependencies
 from core.config import settings
 from core.dependencies import verified_access_token_dependency, verify_service_dependency
+from services.cache.cache import RedisCache
+from services.vector.repo import VectorMilvusRepository
 
 
 @asynccontextmanager
 async def lifespan(app: fa.FastAPI):
     # startup
-    dependencies.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+    redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+    dependencies.redis = redis
+    redis_cache = RedisCache(redis=redis)
+    dependencies.vector_repo = VectorMilvusRepository(cache=redis_cache)
     yield
     # shutdown
 
