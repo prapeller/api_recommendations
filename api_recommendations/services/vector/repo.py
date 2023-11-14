@@ -6,7 +6,7 @@ import httpx
 import numpy as np
 from backoff import on_exception, constant
 from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections
-from pymilvus import MilvusException
+from pymilvus import MilvusException, utility
 
 from core.config import settings
 from services.cache.cache import RedisCache
@@ -48,6 +48,9 @@ class VectorMilvusRepository(AbstractVectorRepository):
 
     @on_exception(constant, MilvusException, max_tries=120, on_backoff=milvus_exception_handler)
     def _create_index(self):
+        if self.collection is None:
+            raise ValueError('VectorMilvusRepository.collection was not created')
+
         collection_exists_without_index = self.collection is not None and not self.collection.has_index()
         index_params = {
             'metric_type': 'L2',
@@ -72,7 +75,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
 
     @on_exception(constant, MilvusException, max_tries=120, on_backoff=milvus_exception_handler)
     def _get_or_create_collection(self):
-        if connections.get_connection().has_collection(self.collection_name):
+        if not utility.has_collection(self.collection_name):
             self.collection = self._create_collection_with_schema()
         else:
             self.collection = Collection(name=self.collection_name)
@@ -102,7 +105,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                 raise fa.HTTPException(fa.status.HTTP_400_BAD_REQUEST, detail=str(e))
         return vector
 
-    async def search_nearest(self, film_uuids: list[str], k=10) -> list:
+    async def search_nearest(self, film_uuids: list[str], limit: int) -> list:
         nearest_uuids = await self.cache.get(str(film_uuids))
         if nearest_uuids is None:
             try:
@@ -115,7 +118,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                     "data": [average_vector],
                     "anns_field": "vector",
                     "param": {"metric_type": "L2", "params": {"nprobe": 10}},
-                    "limit": k,
+                    "limit": limit,
                     "expression": exclude_expression
                 }
                 nearest_uuids = []
@@ -127,7 +130,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                 await self.cache.set(str(film_uuids), nearest_uuids)
         return nearest_uuids
 
-    async def search_nearest_film_uuids_for_user(self, user_uuid: str) -> list[str]:
+    async def search_nearest_film_uuids_for_user(self, user_uuid: str, limit) -> list[str]:
         logger.debug(f'search_nearest_for_user: {user_uuid=:}')
         user_bookmarks_url = f'http://{settings.API_UGC_HOST}:{settings.API_UGC_PORT}/api/v1/film-bookmarks/{user_uuid}'
         nearest_film_uuids = []
@@ -138,7 +141,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                 nearest_films_uuids_dict = json.loads(resp.text)
                 film_uuids = [fb.get('film_uuid') for fb in nearest_films_uuids_dict.get('film_bookmarks', [])]
                 if film_uuids:
-                    nearest_film_uuids = await self.search_nearest([str(film_uuid) for film_uuid in film_uuids])
+                    nearest_film_uuids = await self.search_nearest([str(film_uuid) for film_uuid in film_uuids], limit)
         except (httpx.HTTPError, httpx.TimeoutException) as e:
             raise fa.HTTPException(fa.status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
         return nearest_film_uuids

@@ -8,12 +8,11 @@ from services.vector.repo import VectorMilvusRepository
 
 
 class RecommendationsService:
-    def __init__(self, vector_repo: VectorMilvusRepository, user_uuid: str):
+    def __init__(self, vector_repo: VectorMilvusRepository):
         self.vector_repo = vector_repo
-        self.user_uuid = user_uuid
 
-    async def recommend_films(self) -> list[str]:
-        films_uuids = await self.vector_repo.search_nearest_film_uuids_for_user(self.user_uuid)
+    async def recommend_films_for_user(self, user_uuid: str, limit: int) -> list[str]:
+        films_uuids = await self.vector_repo.search_nearest_film_uuids_for_user(user_uuid=user_uuid, limit=limit)
         if not films_uuids:
             top_films_url = (f'http://{settings.API_SEARCH_HOST}:{settings.API_SEARCH_PORT}/api/v1/services-films/')
             headers = {'Authorization': settings.SERVICE_TO_SERVICE_SECRET,
