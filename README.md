@@ -29,8 +29,8 @@ https://github.com/prapeller/graduate_work
 - provides possibility for users to get the recommended films based on their ugc
 
 notes:
-- weight - importance of vector
-- film vector - list of dots-floats, vectorized based on genre.text (weight 3) / description.text (weight 2) / type.text (weight 1))
+- weight - importance of vector's part. if vector consists of 3 describable parts (film genres names/film description/film type) then weight is importance of genres (3) in comparison with importance of film description (1) 
+- film vector - list of dots-floats, vectorized in n-dimension space based on describable parts (genres names (weight 3) / description (weight 2) / type (weight 1))
 - mongo_ugc - mongo db from 'ugc service' with user likes (film_uuid list)
 - postgres_search - postgresql db from 'search service' with films film_uuid/genre(varchar)/description(text)/type(varchar)
 
@@ -50,8 +50,8 @@ data flow:
 - etl_postgres_to_vector_recommendations loads updated films vectors to vector_db
 - api_recommendations (after user request) 
   - checks cache_recommendations first
-  - if cache miss, it goes to mongo_api for getting list of current_user bookmarked film_uuid list, and request vector_recommendations to get a film_uuid list of similar film vectors
-  - film_uuid list is stored in redis_recommendations and sent back to the frontend
+  - if cache misses, request goes to mongo_api for getting list of current_user bookmarked film_uuids, and request vector_recommendations to get a film_uuids of closest neighbors (by vectors value)
+  - film_uuids are to set in cache and sent back to the frontend
 
 # 1) Deploy locally (api at host)
 - > make api-redis-build-loc
