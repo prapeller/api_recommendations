@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 import fastapi as fa
 import httpx
 import numpy as np
+from backoff import on_exception, constant
 from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections
+from pymilvus import MilvusException
 
 from core.config import settings
 from services.cache.cache import RedisCache
@@ -22,6 +24,14 @@ class AbstractVectorRepository(ABC):
         pass
 
 
+def milvus_exception_handler(details):
+    e = details['exception']
+    message = f"milvus exception: {e}".replace('\n', ' ')
+    tries = details['tries']
+    wait = details['wait']
+    logger.error(f'{tries=:}, wait:{wait:0.1f}, {message=:}')
+
+
 class VectorMilvusRepository(AbstractVectorRepository):
     def __init__(self, cache: RedisCache, dimension=300, collection_name='film_vectors_varchar'):
         self.dimension = dimension
@@ -31,9 +41,11 @@ class VectorMilvusRepository(AbstractVectorRepository):
         self._create_index()
         self.cache = cache
 
+    @on_exception(constant, MilvusException, max_tries=120, on_backoff=milvus_exception_handler)
     def _connect_to_milvus(self):
         connections.connect(alias="default", host=settings.VECTOR_HOST, port=settings.VECTOR_PORT)
 
+    @on_exception(constant, MilvusException, max_tries=120, on_backoff=milvus_exception_handler)
     def _create_index(self):
         index_params = {
             'metric_type': 'L2',
@@ -50,9 +62,12 @@ class VectorMilvusRepository(AbstractVectorRepository):
         ]
         schema = CollectionSchema(fields)
 
-        # Create the collection in Milvus
-        collection = Collection(name=self.collection_name, schema=schema)
-        self.collection = collection
+    @on_exception(constant, MilvusException, max_tries=120, on_backoff=milvus_exception_handler)
+    def _get_or_create_collection(self):
+        if connections.get_connection().has_collection(self.collection_name):
+            self.collection = self._create_collection_with_schema()
+        else:
+            self.collection = Collection(name=self.collection_name)
 
     async def set(self, film_vectors_data: dict[str, list[float]]) -> None:
         """set vector to Milvus collection"""
