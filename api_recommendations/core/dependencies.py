@@ -3,7 +3,6 @@ import uuid
 
 import fastapi as fa
 import httpx
-import pydantic as pd
 from fastapi.security import OAuth2PasswordBearer
 from redis.asyncio import Redis
 
@@ -78,7 +77,6 @@ async def verify_service_dependency(
 
 
 async def recommendations_service_dependency(
-        current_user_uuid: pd.UUID4 = fa.Depends(current_user_uuid_dependency),
         vector_repo: VectorMilvusRepository = fa.Depends(vector_repo_dependency),
 ) -> RecommendationsService:
-    return RecommendationsService(vector_repo, str(current_user_uuid))
+    return RecommendationsService(vector_repo)
