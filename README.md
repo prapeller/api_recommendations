@@ -29,7 +29,7 @@ https://github.com/prapeller/graduate_work
 - provides possibility for users to get the recommended films based on their ugc
 
 notes:
-- weight - importance of vector's part. if vector consists of 3 describable parts (film genres names/film description/film type) then weight is importance of genres (3) in comparison with importance of film description (1) 
+- weight - importance of vector's part. if vector consists of 3 describable parts (film genres names/film description/film type) then weight of genres (3) is more than weight of film description (2) 
 - film vector - list of dots-floats, vectorized in n-dimension space based on describable parts (genres names (weight 3) / description (weight 2) / type (weight 1))
 - mongo_ugc - mongo db from 'ugc service' with user likes (film_uuid list)
 - postgres_search - postgresql db from 'search service' with films film_uuid/genre(varchar)/description(text)/type(varchar)
