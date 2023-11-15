@@ -88,7 +88,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                 vector_data = [vector]
                 self.collection.insert([film_id, vector_data])
                 logger.debug(f'inserted by {film_id}: {str(vector)[:10]}...')
-                await self.cache.set(film_uuid, vector_data)
+                await self.cache.set(film_uuid, vector)
             self.collection.flush()
         except MilvusException as e:
             raise fa.HTTPException(fa.status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -119,7 +119,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                     "anns_field": "vector",
                     "param": {"metric_type": "L2", "params": {"nprobe": 10}},
                     "limit": limit,
-                    "expression": exclude_expression
+                    "expr": exclude_expression
                 }
                 nearest_uuids = []
                 results = self.collection.search(**search_params)
