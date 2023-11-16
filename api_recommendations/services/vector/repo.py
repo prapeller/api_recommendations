@@ -106,7 +106,8 @@ class VectorMilvusRepository(AbstractVectorRepository):
         return vector
 
     async def search_nearest(self, film_uuids: list[str], limit: int) -> list:
-        nearest_uuids = await self.cache.get(str(film_uuids))
+        key = str((str(film_uuids), limit))
+        nearest_uuids = await self.cache.get(key)
         if nearest_uuids is None:
             try:
                 vectors = [await self.get(film_uuid) for film_uuid in film_uuids]
@@ -127,7 +128,7 @@ class VectorMilvusRepository(AbstractVectorRepository):
                 raise fa.HTTPException(fa.status.HTTP_400_BAD_REQUEST, detail=str(e))
             if results:
                 nearest_uuids = [str(result.entity.id) for result in results[0]]
-                await self.cache.set(str(film_uuids), nearest_uuids)
+                await self.cache.set(key, nearest_uuids)
         return nearest_uuids
 
     async def search_nearest_film_uuids_for_user(self, user_uuid: str, limit) -> list[str]:
